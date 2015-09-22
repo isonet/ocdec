@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-#set -x
 #  Script: ocdec.sh
 #  Author: Andrey Arapov
 #  Email: andrey.arapov@nixaid.com
@@ -21,13 +20,15 @@
 #
 #
 #
-# Version: 1.0.0 - Initial release (22 September 2015)
+# Version:
+#  1.0.1 - little usage fix (22 Sep 2015)
+#  1.0.0 - Initial release (22 Sep 2015)
 #
 # Tested with:
-# - ownCloud 8.1.3
+#  - ownCloud 8.1.3
 #
 # Limitations:
-# - with some files (binary ones) it is running really slow
+#  - it is really really slow
 #
 #
 # === Usage notes
@@ -55,13 +56,13 @@
 # export USER=testuser1
 # export userLoginPass='s3cr3tpass'
 # cd /srv/ownclouddata
-# find ${USER}/files -type d |cut -sd / -f 2- |xargs -I@ mkdir -p "${USER}-DECRYPTED/@"
+# find ${USER}/files -type d -print0 |xargs -0 -I@ echo "@" |cut -sd / -f 2- |xargs -I@ mkdir -p "${USER}-DECRYPTED/@"
 #
 #
 # 2. Decrypt the data
 #
 # cd /srv/ownclouddata
-# find ${USER}/files -type f |xargs -I@ sh -c '/tmp/ocdec.sh "@" > "${USER}-DECRYPTED/$(echo @|cut -sd / -f 2-)"'
+# find ${USER}/files -type f -print0 |xargs -0 -I@ sh -c '/tmp/ocdec.sh "@" > "${USER}-DECRYPTED/$(echo "@"|cut -sd / -f 2-)"'
 #
 # Now all your data is decrypted & available at the ${USER}-DECRYPTED/ path !
 #
