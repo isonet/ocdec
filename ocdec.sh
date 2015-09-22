@@ -127,19 +127,27 @@ function decryptFile() {
   # --- Get the FileKey ---
 
   # --- Decrypt the file ---
-  # TODO: to figure out how to speed-up the decryption process.
-  #       bottlenecks:
-  #        - awk is running really slow, consuming lot of CPU
   encFileContentsALL="$(cat "${USER}/$encFilePath")"
   encFileContentsNOHEAD=$(echo -n "$encFileContentsALL" | sed -r 's/^HBEGIN:.+:HEND-*//')
-  N=0
-  for IV in $(echo -n "$encFileContentsNOHEAD" |grep -E -o '00iv00.{16}xx' |sed -r 's/^00iv00//;s/xx$//'); do
-    N=$[N+1]
-    encFileContentsBASE64=$(echo -n "$encFileContentsNOHEAD" |awk -F '00iv00................xx' -v N=$N '{print $N}')
-    plainFileIVHEX=$(echo -n "$IV" |od -An -tx1 |tr -dc '[:xdigit:]')
-    openssl enc -AES-256-CFB -d -nosalt -base64 -A -K $decFileKeyContentHEX -iv $plainFileIVHEX -in <(echo "$encFileContentsBASE64")
-    #php -r "echo openssl_decrypt('$encFileContentsBASE64', 'AES-256-CFB', '$decFileKeyContent', false, '$IV');"
-  done
+
+  pos=0; posc=0; encStream="";
+  # bottleneck: bash read by character is super slow
+  while IFS= read -r -n1 char; do
+    (( posc++ ))
+    if $(echo ${encStream: -24} |grep -Eq "^00iv00.{16}xx$"); then
+      plainIV=$(echo ${encStream: -24} |sed -r 's/^00iv00//;s/xx$//')
+      encStreamReady=${encStream:((posc - pos - 1)):((pos - 24))}
+      (( pos=0 ))
+
+      #echo "[::] DEBUG: " $encStreamReady with $plainIV
+      # can decrypt now
+      plainFileIVHEX=$(echo -n "$plainIV" |od -An -tx1 |tr -dc '[:xdigit:]')
+      openssl enc -AES-256-CFB -d -nosalt -base64 -A -K $decFileKeyContentHEX -iv $plainFileIVHEX -in <(echo "$encStreamReady")
+      #php -r "echo openssl_decrypt('$encStreamReady', 'AES-256-CFB', '$decFileKeyContent', false, '$plainIV');"
+    fi
+    (( pos++ ))
+    encStream="$encStream$char"
+  done <<< $encFileContentsNOHEAD
   # --- Decrypt the file ---
 }
 
