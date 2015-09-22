@@ -28,7 +28,7 @@
 #  - ownCloud 8.1.3
 #
 # Limitations:
-#  - it is really really slow
+#  - it is really really slow (the largest bottleneck is in awk part of the script)
 #
 #
 # === Usage notes
@@ -127,7 +127,9 @@ function decryptFile() {
   # --- Get the FileKey ---
 
   # --- Decrypt the file ---
-  # TODO: to figure out how to speed-up the decryption process
+  # TODO: to figure out how to speed-up the decryption process.
+  #       bottlenecks:
+  #        - awk is running really slow, consuming lot of CPU
   encFileContentsALL="$(cat "${USER}/$encFilePath")"
   encFileContentsNOHEAD=$(echo -n "$encFileContentsALL" | sed -r 's/^HBEGIN:.+:HEND-*//')
   N=0
