@@ -124,6 +124,7 @@ function decryptFile() {
 
   decFileKeyContent="$( openssl rc4 -d -in "$encFileKeyPath" -iv 0 -K $decUserFileShareKeyHEX )"
   decFileKeyContentHEX="$( echo -n $decFileKeyContent |od -An -tx1 |tr -dc '[:xdigit:]' )"
+  decFileKeyContentHEX=${decFileKeyContentHEX:0:64}
   # --- Get the FileKey ---
 
   # --- Decrypt the file ---
