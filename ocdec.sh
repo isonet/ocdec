@@ -130,9 +130,11 @@ function decryptFile() {
   # --- Decrypt the file ---
   # OC writes the encrypted file in 8K chunks, each containing it's own iv in the end
   chunkSize=8192
-  while read -d '' -n $chunkSize CHUNK || [ -n "$CHUNK" ]; do
+  while read -d '' -n $chunkSize CHUNK || [ ! -z "$CHUNK" ]; do
     #split chunk into payload an iv string (strip padding from iv)          
     read payload iv <<<`echo $CHUNK | sed -r 's/(.*)00iv00(.{16})xx/\1 \2/'`
+    CHUNK=
+    #if [ -z $CHUNK ]; then break; fi
     # convert base64 iv into hex
     iv=$(echo -n "$iv" | od -An -tx1 | tr -dc '[:xdigit:]' )
     # decode chunk
