@@ -137,7 +137,7 @@ function decryptFile() {
     iv=$(echo -n "$iv" | od -An -tx1 | tr -dc '[:xdigit:]' )
     # decode chunk
     openssl enc -AES-256-CFB -d -nosalt -base64 -A -K $decFileKeyContentHEX -iv $iv -in <(echo "$payload")
-    done <<<`sed -r 's/^HBEGIN:.+:HEND-*//' <"$encFilePath"` # pipe the encrypted file without head into the loop
+    done <<<`sed -r 's/^HBEGIN:.+:HEND-*//' <"${USER}/$encFilePath"` # pipe the encrypted file without head into the loop
   # --- Decrypt the file ---
 }
 
