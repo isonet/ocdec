@@ -124,22 +124,22 @@ function decryptFile() {
 
   decFileKeyContent="$( openssl rc4 -d -in "$encFileKeyPath" -iv 0 -K $decUserFileShareKeyHEX )"
   decFileKeyContentHEX="$( echo -n $decFileKeyContent |od -An -tx1 |tr -dc '[:xdigit:]' )"
+  decFileKeyContentHEX=${decFileKeyContentHEX:0:64}
   # --- Get the FileKey ---
 
   # --- Decrypt the file ---
-  # TODO: to figure out how to speed-up the decryption process.
-  #       bottlenecks:
-  #        - awk is running really slow, consuming lot of CPU
-  encFileContentsALL="$(cat "${USER}/$encFilePath")"
-  encFileContentsNOHEAD=$(echo -n "$encFileContentsALL" | sed -r 's/^HBEGIN:.+:HEND-*//')
-  N=0
-  for IV in $(echo -n "$encFileContentsNOHEAD" |grep -E -o '00iv00.{16}xx' |sed -r 's/^00iv00//;s/xx$//'); do
-    N=$[N+1]
-    encFileContentsBASE64=$(echo -n "$encFileContentsNOHEAD" |awk -F '00iv00................xx' -v N=$N '{print $N}')
-    plainFileIVHEX=$(echo -n "$IV" |od -An -tx1 |tr -dc '[:xdigit:]')
-    openssl enc -AES-256-CFB -d -nosalt -base64 -A -K $decFileKeyContentHEX -iv $plainFileIVHEX -in <(echo "$encFileContentsBASE64")
-    #php -r "echo openssl_decrypt('$encFileContentsBASE64', 'AES-256-CFB', '$decFileKeyContent', false, '$IV');"
-  done
+  # OC writes the encrypted file in 8K chunks, each containing it's own iv in the end
+  chunkSize=8192
+  while read -d '' -n $chunkSize CHUNK || [ ! -z "$CHUNK" ]; do
+    #split chunk into payload an iv string (strip padding from iv)          
+    read payload iv <<<`echo $CHUNK | sed -r 's/(.*)00iv00(.{16})xx/\1 \2/'`
+    CHUNK=
+    #if [ -z $CHUNK ]; then break; fi
+    # convert base64 iv into hex
+    iv=$(echo -n "$iv" | od -An -tx1 | tr -dc '[:xdigit:]' )
+    # decode chunk
+    openssl enc -AES-256-CFB -d -nosalt -base64 -A -K $decFileKeyContentHEX -iv $iv -in <(echo "$payload")
+    done <<<`sed -r 's/^HBEGIN:.+:HEND-*//' <"${USER}/$encFilePath"` # pipe the encrypted file without head into the loop
   # --- Decrypt the file ---
 }
 
