@@ -144,10 +144,10 @@ function decryptFile() {
 }
 
 # Get a username from the path (arg1)
-USER="$(echo $1 |cut -sd / -f 1)"
+USER="$(echo "$1" |cut -sd / -f 1)"
 
 # Strip off the username from the path (arg1)
-FILETD="$(echo $1 |cut -sd / -f 2-)"
+FILETD="$(echo "$1" |cut -sd / -f 2-)"
 
 if [ ! -r "$USER" ]; then
   echo "User directory cannot be found! Are you sure you are in ownCloud's data directory?"
